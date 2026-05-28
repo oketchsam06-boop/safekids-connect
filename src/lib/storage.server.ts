@@ -47,6 +47,6 @@ export async function logAudit(actorId: string | null, action: string, resourceT
     action,
     resource_type: resourceType,
     resource_id: resourceId,
-    metadata: metadata ?? null,
+    metadata: (metadata ?? null) as any,
   });
 }
