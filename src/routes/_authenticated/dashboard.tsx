@@ -10,7 +10,14 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle2, FileSearch, MapPin, Users, type LucideIcon } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  FileSearch,
+  MapPin,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 
 type RecentCase = {
   id: string;
