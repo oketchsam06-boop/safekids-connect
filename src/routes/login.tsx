@@ -37,7 +37,9 @@ function LoginPage() {
   }
 
   async function onGoogle() {
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/dashboard" });
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin + "/dashboard",
+    });
     if (result.error) toast.error("Google sign-in failed");
     if (!result.error && !result.redirected) {
       await syncAccount({ data: {} });
@@ -50,23 +52,46 @@ function LoginPage() {
       <SiteHeader />
       <main className="container mx-auto flex items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">
-          <CardHeader><CardTitle>{t("auth.signIn")}</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>{t("auth.signIn")}</CardTitle>
+          </CardHeader>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="email">{t("auth.email")}</Label>
-                <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
               <div>
                 <Label htmlFor="password">{t("auth.password")}</Label>
-                <Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>{t("auth.signIn")}</Button>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {t("auth.signIn")}
+              </Button>
             </form>
             <div className="my-4 text-center text-xs text-muted-foreground">{t("auth.or")}</div>
-            <Button type="button" variant="outline" className="w-full" onClick={onGoogle}>{t("auth.google")}</Button>
+            <Button type="button" variant="outline" className="w-full" onClick={onGoogle}>
+              {t("auth.google")}
+            </Button>
             <p className="mt-4 text-center text-sm text-muted-foreground">
-              {t("auth.noAccount")} <Link to="/signup" className="text-primary underline">{t("auth.signUp")}</Link>
+              {t("auth.noAccount")}{" "}
+              <Link to="/signup" className="text-primary underline">
+                {t("auth.signUp")}
+              </Link>
             </p>
           </CardContent>
         </Card>
