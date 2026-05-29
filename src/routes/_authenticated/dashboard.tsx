@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getMyContext } from "@/lib/auth.functions";
+import { getMyContext, syncMyAccount } from "@/lib/auth.functions";
 import { getDashboardStats } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -21,9 +21,16 @@ function Dashboard() {
   const { t } = useTranslation();
   const nav = useNavigate();
   const fetchCtx = useServerFn(getMyContext);
+  const syncAccount = useServerFn(syncMyAccount);
   const fetchStats = useServerFn(getDashboardStats);
-  const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => fetchCtx() });
-  const { data: stats } = useQuery({ queryKey: ["stats"], queryFn: () => fetchStats() });
+  const { data: me } = useQuery({
+    queryKey: ["me"],
+    queryFn: async () => {
+      await syncAccount({ data: {} });
+      return fetchCtx();
+    },
+  });
+  const { data: stats } = useQuery({ queryKey: ["stats", me?.userId], queryFn: () => fetchStats(), enabled: !!me?.userId });
 
   async function signOut() {
     await supabase.auth.signOut();
