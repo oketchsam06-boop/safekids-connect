@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { useServerFn } from "@tanstack/react-start";
+import { syncMyAccount } from "@/lib/auth.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +21,7 @@ export const Route = createFileRoute("/signup")({
 function SignupPage() {
   const { t } = useTranslation();
   const nav = useNavigate();
+  const syncAccount = useServerFn(syncMyAccount);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -28,7 +31,7 @@ function SignupPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -38,6 +41,12 @@ function SignupPage() {
     });
     setLoading(false);
     if (error) return toast.error(error.message);
+    if (data.session) {
+      await syncAccount({ data: { full_name: fullName, phone } });
+      toast.success("Account created successfully.");
+      nav({ to: "/dashboard" });
+      return;
+    }
     toast.success("Check your email to verify your account.");
     nav({ to: "/login" });
   }
@@ -45,6 +54,10 @@ function SignupPage() {
   async function onGoogle() {
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/dashboard" });
     if (result.error) toast.error("Google sign-in failed");
+    if (!result.error && !result.redirected) {
+      await syncAccount({ data: { full_name: fullName, phone } });
+      nav({ to: "/dashboard" });
+    }
   }
 
   return (
