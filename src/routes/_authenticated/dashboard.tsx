@@ -10,7 +10,17 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle2, FileSearch, MapPin, Users } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileSearch, MapPin, Users, type LucideIcon } from "lucide-react";
+
+type RecentCase = {
+  id: string;
+  first_name: string;
+  age: number;
+  county: string | null;
+  status: string;
+};
+
+type ActionRoute = "/cases/new" | "/sightings/new" | "/review" | "/admin/audit";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Tafuta Mtoto" }] }),
@@ -158,7 +168,7 @@ function Dashboard() {
             </CardHeader>
             <CardContent>
               <ul className="divide-y">
-                {policeStats.recentCases.map((c: any) => (
+                {policeStats.recentCases.map((c: RecentCase) => (
                   <li key={c.id} className="flex items-center justify-between py-2 text-sm">
                     <Link
                       to="/cases/$caseId"
@@ -187,7 +197,7 @@ function StatCard({
   value,
   tone = "secondary",
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   value: number;
   tone?: string;
@@ -217,7 +227,7 @@ function ActionCard({
 }: {
   title: string;
   body: string;
-  to: string;
+  to: ActionRoute;
   cta: string;
 }) {
   return (
@@ -228,7 +238,7 @@ function ActionCard({
       <CardContent>
         <p className="mb-3 text-sm text-muted-foreground">{body}</p>
         <Button asChild className="w-full">
-          <Link to={to as any}>{cta}</Link>
+          <Link to={to}>{cta}</Link>
         </Button>
       </CardContent>
     </Card>
