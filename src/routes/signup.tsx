@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { useServerFn } from "@tanstack/react-start";
+import { syncMyAccount } from "@/lib/auth.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +21,7 @@ export const Route = createFileRoute("/signup")({
 function SignupPage() {
   const { t } = useTranslation();
   const nav = useNavigate();
+  const syncAccount = useServerFn(syncMyAccount);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -28,7 +31,7 @@ function SignupPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -38,13 +41,25 @@ function SignupPage() {
     });
     setLoading(false);
     if (error) return toast.error(error.message);
+    if (data.session) {
+      await syncAccount({ data: { full_name: fullName, phone } });
+      toast.success("Account created successfully.");
+      nav({ to: "/dashboard" });
+      return;
+    }
     toast.success("Check your email to verify your account.");
     nav({ to: "/login" });
   }
 
   async function onGoogle() {
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/dashboard" });
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin + "/dashboard",
+    });
     if (result.error) toast.error("Google sign-in failed");
+    if (!result.error && !result.redirected) {
+      await syncAccount({ data: { full_name: fullName, phone } });
+      nav({ to: "/dashboard" });
+    }
   }
 
   return (
@@ -52,20 +67,59 @@ function SignupPage() {
       <SiteHeader />
       <main className="container mx-auto flex items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">
-          <CardHeader><CardTitle>{t("auth.signUp")}</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>{t("auth.signUp")}</CardTitle>
+          </CardHeader>
           <CardContent>
             <p className="mb-4 text-xs text-muted-foreground">{t("auth.signupBlurb")}</p>
             <form onSubmit={onSubmit} className="space-y-3">
-              <div><Label htmlFor="fn">{t("auth.fullName")}</Label><Input id="fn" value={fullName} onChange={(e) => setFullName(e.target.value)} required /></div>
-              <div><Label htmlFor="ph">{t("auth.phone")}</Label><Input id="ph" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-              <div><Label htmlFor="em">{t("auth.email")}</Label><Input id="em" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-              <div><Label htmlFor="pw">{t("auth.password")}</Label><Input id="pw" type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
-              <Button type="submit" className="w-full" disabled={loading}>{t("auth.signUp")}</Button>
+              <div>
+                <Label htmlFor="fn">{t("auth.fullName")}</Label>
+                <Input
+                  id="fn"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="ph">{t("auth.phone")}</Label>
+                <Input id="ph" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="em">{t("auth.email")}</Label>
+                <Input
+                  id="em"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="pw">{t("auth.password")}</Label>
+                <Input
+                  id="pw"
+                  type="password"
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {t("auth.signUp")}
+              </Button>
             </form>
             <div className="my-4 text-center text-xs text-muted-foreground">{t("auth.or")}</div>
-            <Button type="button" variant="outline" className="w-full" onClick={onGoogle}>{t("auth.google")}</Button>
+            <Button type="button" variant="outline" className="w-full" onClick={onGoogle}>
+              {t("auth.google")}
+            </Button>
             <p className="mt-4 text-center text-sm text-muted-foreground">
-              {t("auth.haveAccount")} <Link to="/login" className="text-primary underline">{t("auth.signIn")}</Link>
+              {t("auth.haveAccount")}{" "}
+              <Link to="/login" className="text-primary underline">
+                {t("auth.signIn")}
+              </Link>
             </p>
           </CardContent>
         </Card>

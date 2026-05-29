@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.ensure_user_account_defaults(text, text);
