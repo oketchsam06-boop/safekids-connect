@@ -436,6 +436,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ensure_user_account_defaults: {
+        Args: { _full_name?: string; _phone?: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
