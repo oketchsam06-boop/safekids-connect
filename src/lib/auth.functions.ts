@@ -13,9 +13,13 @@ export const syncMyAccount = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => AccountInput.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const claims = context.claims as Record<string, any>;
+    const claims = context.claims as Record<string, unknown>;
     const metadata = (claims.user_metadata ?? {}) as Record<string, unknown>;
-    const fullName = data.full_name || (typeof metadata.full_name === "string" ? metadata.full_name : null) || (typeof metadata.name === "string" ? metadata.name : null) || (typeof claims.email === "string" ? claims.email : null);
+    const fullName =
+      data.full_name ||
+      (typeof metadata.full_name === "string" ? metadata.full_name : null) ||
+      (typeof metadata.name === "string" ? metadata.name : null) ||
+      (typeof claims.email === "string" ? claims.email : null);
 
     const { error: profileError } = await supabaseAdmin.from("profiles").upsert(
       {
