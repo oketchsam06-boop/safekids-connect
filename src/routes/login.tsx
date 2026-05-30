@@ -25,15 +25,27 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setFormError(null);
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) return toast.error(error.message);
-    await syncAccount({ data: {} });
-    nav({ to: "/dashboard" });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setFormError(error.message);
+        toast.error(error.message);
+        return;
+      }
+
+      void syncAccount({ data: {} }).catch((syncError) => {
+        console.error("Account sync after login failed", syncError);
+      });
+      nav({ to: "/dashboard", replace: true });
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function onGoogle() {
@@ -42,8 +54,10 @@ function LoginPage() {
     });
     if (result.error) toast.error("Google sign-in failed");
     if (!result.error && !result.redirected) {
-      await syncAccount({ data: {} });
-      nav({ to: "/dashboard" });
+      void syncAccount({ data: {} }).catch((syncError) => {
+        console.error("Account sync after Google login failed", syncError);
+      });
+      nav({ to: "/dashboard", replace: true });
     }
   }
 
@@ -79,8 +93,9 @@ function LoginPage() {
                   required
                 />
               </div>
+              {formError && <p className="text-sm text-destructive">{formError}</p>}
               <Button type="submit" className="w-full" disabled={loading}>
-                {t("auth.signIn")}
+                {loading ? "Signing in…" : t("auth.signIn")}
               </Button>
             </form>
             <div className="my-4 text-center text-xs text-muted-foreground">{t("auth.or")}</div>
