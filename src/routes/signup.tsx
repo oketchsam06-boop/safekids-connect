@@ -27,28 +27,42 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setFormError(null);
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin + "/dashboard",
-        data: { full_name: fullName, phone },
-      },
-    });
-    setLoading(false);
-    if (error) return toast.error(error.message);
-    if (data.session) {
-      await syncAccount({ data: { full_name: fullName, phone } });
-      toast.success("Account created successfully.");
-      nav({ to: "/dashboard" });
-      return;
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin + "/dashboard",
+          data: { full_name: fullName, phone },
+        },
+      });
+      if (error) {
+        setFormError(error.message);
+        toast.error(error.message);
+        return;
+      }
+      if (data.session) {
+        try {
+          await syncAccount({ data: { full_name: fullName, phone } });
+        } catch (syncError) {
+          console.error("Account sync after signup failed", syncError);
+          toast.warning("Account created, but setup will finish on the dashboard.");
+        }
+        toast.success("Account created successfully.");
+        nav({ to: "/dashboard", replace: true });
+        return;
+      }
+      toast.success("Check your email to verify your account.");
+      nav({ to: "/login" });
+    } finally {
+      setLoading(false);
     }
-    toast.success("Check your email to verify your account.");
-    nav({ to: "/login" });
   }
 
   async function onGoogle() {
@@ -107,8 +121,9 @@ function SignupPage() {
                   required
                 />
               </div>
+              {formError && <p className="text-sm text-destructive">{formError}</p>}
               <Button type="submit" className="w-full" disabled={loading}>
-                {t("auth.signUp")}
+                {loading ? "Creating account…" : t("auth.signUp")}
               </Button>
             </form>
             <div className="my-4 text-center text-xs text-muted-foreground">{t("auth.or")}</div>
