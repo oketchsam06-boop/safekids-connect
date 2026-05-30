@@ -43,7 +43,11 @@ function Dashboard() {
   const { data: me } = useQuery({
     queryKey: ["me"],
     queryFn: async () => {
-      await syncAccount({ data: {} });
+      try {
+        await syncAccount({ data: {} });
+      } catch (syncError) {
+        console.error("Dashboard account sync failed", syncError);
+      }
       return fetchCtx();
     },
   });
