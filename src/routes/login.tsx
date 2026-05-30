@@ -39,13 +39,9 @@ function LoginPage() {
         return;
       }
 
-      try {
-        await syncAccount({ data: {} });
-      } catch (syncError) {
+      void syncAccount({ data: {} }).catch((syncError) => {
         console.error("Account sync after login failed", syncError);
-        toast.warning("Signed in, but account setup will finish on the dashboard.");
-      }
-
+      });
       nav({ to: "/dashboard", replace: true });
     } finally {
       setLoading(false);
@@ -58,8 +54,10 @@ function LoginPage() {
     });
     if (result.error) toast.error("Google sign-in failed");
     if (!result.error && !result.redirected) {
-      await syncAccount({ data: {} });
-      nav({ to: "/dashboard" });
+      void syncAccount({ data: {} }).catch((syncError) => {
+        console.error("Account sync after Google login failed", syncError);
+      });
+      nav({ to: "/dashboard", replace: true });
     }
   }
 

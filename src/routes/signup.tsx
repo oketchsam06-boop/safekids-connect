@@ -48,12 +48,9 @@ function SignupPage() {
         return;
       }
       if (data.session) {
-        try {
-          await syncAccount({ data: { full_name: fullName, phone } });
-        } catch (syncError) {
+        void syncAccount({ data: { full_name: fullName, phone } }).catch((syncError) => {
           console.error("Account sync after signup failed", syncError);
-          toast.warning("Account created, but setup will finish on the dashboard.");
-        }
+        });
         toast.success("Account created successfully.");
         nav({ to: "/dashboard", replace: true });
         return;
@@ -71,8 +68,10 @@ function SignupPage() {
     });
     if (result.error) toast.error("Google sign-in failed");
     if (!result.error && !result.redirected) {
-      await syncAccount({ data: { full_name: fullName, phone } });
-      nav({ to: "/dashboard" });
+      void syncAccount({ data: { full_name: fullName, phone } }).catch((syncError) => {
+        console.error("Account sync after Google signup failed", syncError);
+      });
+      nav({ to: "/dashboard", replace: true });
     }
   }
 
