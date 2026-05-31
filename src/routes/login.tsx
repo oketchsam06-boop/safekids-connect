@@ -1,6 +1,6 @@
 import "@/i18n";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SiteHeader } from "@/components/SiteHeader";
 import { toast } from "sonner";
+import { Mail } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign in — Tafuta Mtoto" }] }),
@@ -26,6 +27,11 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const showVerifyNotice = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return new URLSearchParams(window.location.search).get("verify") === "1";
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -70,6 +76,18 @@ function LoginPage() {
             <CardTitle>{t("auth.signIn")}</CardTitle>
           </CardHeader>
           <CardContent>
+            {showVerifyNotice && (
+              <div className="mb-4 flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">
+                <Mail className="mt-0.5 h-5 w-5 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold">Verify your email</p>
+                  <p className="mt-1 text-xs leading-relaxed">
+                    We sent a confirmation link to your email address. Please open your inbox,
+                    click the link, and then return here to sign in.
+                  </p>
+                </div>
+              </div>
+            )}
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="email">{t("auth.email")}</Label>
