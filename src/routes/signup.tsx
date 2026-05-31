@@ -56,7 +56,7 @@ function SignupPage() {
         return;
       }
       toast.success("Check your email to verify your account.");
-      nav({ to: "/login" });
+      nav({ to: "/login", search: { verify: "1" } });
     } finally {
       setLoading(false);
     }
