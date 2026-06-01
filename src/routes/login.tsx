@@ -26,6 +26,7 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   const showVerifyNotice = useMemo(() => {
@@ -55,15 +56,31 @@ function LoginPage() {
   }
 
   async function onGoogle() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/dashboard",
-    });
-    if (result.error) toast.error("Google sign-in failed");
-    if (!result.error && !result.redirected) {
-      void syncAccount({ data: {} }).catch((syncError) => {
-        console.error("Account sync after Google login failed", syncError);
+    setFormError(null);
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin + "/dashboard",
+        extraParams: { prompt: "select_account" },
       });
-      nav({ to: "/dashboard", replace: true });
+      if (result.error) {
+        const message = result.error.message || "Google sign-in failed. Please try again.";
+        setFormError(message);
+        toast.error(message);
+        return;
+      }
+      if (!result.redirected) {
+        void syncAccount({ data: {} }).catch((syncError) => {
+          console.error("Account sync after Google login failed", syncError);
+        });
+        nav({ to: "/dashboard", replace: true });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Google sign-in failed. Please try again.";
+      setFormError(message);
+      toast.error(message);
+    } finally {
+      setGoogleLoading(false);
     }
   }
 
@@ -117,8 +134,8 @@ function LoginPage() {
               </Button>
             </form>
             <div className="my-4 text-center text-xs text-muted-foreground">{t("auth.or")}</div>
-            <Button type="button" variant="outline" className="w-full" onClick={onGoogle}>
-              {t("auth.google")}
+            <Button type="button" variant="outline" className="w-full" onClick={onGoogle} disabled={googleLoading}>
+              {googleLoading ? "Opening Google…" : t("auth.google")}
             </Button>
             <p className="mt-4 text-center text-sm text-muted-foreground">
               {t("auth.noAccount")}{" "}
