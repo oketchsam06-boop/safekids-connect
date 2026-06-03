@@ -11,8 +11,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { fileToDataUrl } from "@/lib/image";
+import { KENYA_COUNTIES } from "@/lib/kenya-counties";
 
 export const Route = createFileRoute("/_authenticated/cases/new")({
   head: () => ({ meta: [{ title: "Report a missing child — Tafuta Mtoto" }] }),
@@ -112,7 +114,17 @@ function NewCasePage() {
                 <div><Label>{t("case.lastInitial")}</Label><Input maxLength={1} value={form.last_initial} onChange={(e) => setForm({ ...form, last_initial: e.target.value })} /></div>
                 <div><Label>{t("case.age")}</Label><Input type="number" min={0} max={18} required value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} /></div>
                 <div><Label>{t("case.gender")}</Label><Input value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} placeholder="male / female / other" /></div>
-                <div><Label>{t("case.county")}</Label><Input value={form.county} onChange={(e) => setForm({ ...form, county: e.target.value })} /></div>
+                <div>
+                  <Label>{t("case.county")}</Label>
+                  <Select value={form.county} onValueChange={(v) => setForm({ ...form, county: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select county" /></SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {KENYA_COUNTIES.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div><Label>{t("case.lastSeenAt")}</Label><Input type="datetime-local" value={form.last_seen_at} onChange={(e) => setForm({ ...form, last_seen_at: e.target.value })} /></div>
               </div>
               <div><Label>{t("case.lastSeenLocation")}</Label><Input value={form.last_seen_location_text} onChange={(e) => setForm({ ...form, last_seen_location_text: e.target.value })} /></div>
