@@ -132,6 +132,11 @@ function LoginPage() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Signing in…" : t("auth.signIn")}
               </Button>
+              <div className="text-right">
+                <Link to="/forgot-password" className="text-xs text-primary underline">
+                  Forgot password?
+                </Link>
+              </div>
             </form>
             <div className="my-4 text-center text-xs text-muted-foreground">{t("auth.or")}</div>
             <Button type="button" variant="outline" className="w-full" onClick={onGoogle} disabled={googleLoading}>
