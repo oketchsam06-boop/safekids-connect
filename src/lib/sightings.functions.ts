@@ -82,24 +82,24 @@ export const createSighting = createServerFn({ method: "POST" })
       usable.map(async (c) => ({ c, b64: await downloadAsBase64(photoByCase.get(c.id)!) })),
     );
 
-    const schema = z.object({
-      results: z.array(
-        z
-          .object({
-            candidate_id: z.string().optional(),
-            id: z.string().optional(),
-            score: z.number(),
-            rationale: z.string().optional().default("Visual similarity detected by AI."),
-            observable_features: z.array(z.string()).optional().default([]),
-          })
-          .transform((result) => ({
-            candidate_id: result.candidate_id ?? result.id ?? "",
-            score: Math.max(0, Math.min(1, result.score)),
-            rationale: result.rationale,
-            observable_features: result.observable_features,
-          })),
-      ),
-    });
+    const resultSchema = z
+      .object({
+        candidate_id: z.string().optional(),
+        id: z.string().optional(),
+        score: z.number(),
+        rationale: z.string().optional().default("Visual similarity detected by AI."),
+        observable_features: z.array(z.string()).optional().default([]),
+      })
+      .transform((result) => ({
+        candidate_id: result.candidate_id ?? result.id ?? "",
+        score: Math.max(0, Math.min(1, result.score)),
+        rationale: result.rationale,
+        observable_features: result.observable_features,
+      }));
+    const schema = z.union([
+      z.object({ results: z.array(resultSchema) }),
+      z.array(resultSchema).transform((results) => ({ results })),
+    ]);
 
     let aiResults: z.infer<typeof schema>["results"] = [];
     try {
