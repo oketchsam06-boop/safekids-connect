@@ -86,9 +86,9 @@ export const createSighting = createServerFn({ method: "POST" })
       results: z.array(
         z.object({
           candidate_id: z.string(),
-          score: z.number().min(0).max(1),
-          rationale: z.string().max(500),
-          observable_features: z.array(z.string()).max(8),
+          score: z.number(),
+          rationale: z.string(),
+          observable_features: z.array(z.string()).optional().default([]),
         }),
       ),
     });
