@@ -6,6 +6,9 @@ import { LangSwitch } from "./LangSwitch";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
+import { getMyContext } from "@/lib/auth.functions";
 
 export function SiteHeader() {
   const { t } = useTranslation();
@@ -16,6 +19,16 @@ export function SiteHeader() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  const fetchCtx = useServerFn(getMyContext);
+  const { data: me } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => fetchCtx(),
+    enabled: authed,
+  });
+  const roles = me?.roles ?? [];
+  const isOfficer = roles.includes("police_admin");
+  const isAdmin = roles.includes("super_admin");
+
   return (
     <header className="border-b">
       <div className="container mx-auto flex items-center justify-between px-4 py-3">
@@ -24,15 +37,28 @@ export function SiteHeader() {
           {t("brand")}
         </Link>
         <nav className="flex items-center gap-2">
+          {authed && (
+            <>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/dashboard">{t("nav.dashboard")}</Link>
+              </Button>
+              {(isOfficer || isAdmin) && (
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/officer">Officer</Link>
+                </Button>
+              )}
+              {isAdmin && (
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/admin">CWSK</Link>
+                </Button>
+              )}
+            </>
+          )}
           <Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground">
             {t("nav.privacy")}
           </Link>
           <LangSwitch />
-          {authed ? (
-            <Button asChild size="sm">
-              <Link to="/dashboard">{t("nav.dashboard")}</Link>
-            </Button>
-          ) : (
+          {!authed && (
             <>
               <Button asChild variant="ghost" size="sm">
                 <Link to="/login">{t("nav.login")}</Link>
