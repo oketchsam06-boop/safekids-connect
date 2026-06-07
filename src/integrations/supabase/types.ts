@@ -233,56 +233,85 @@ export type Database = {
       missing_children: {
         Row: {
           age: number
+          assigned_officer_id: string | null
+          case_file_number: string | null
           county: string | null
           created_at: string
           description: string | null
           first_name: string
+          found_at: string | null
+          found_notes: string | null
           gender: string | null
           id: string
+          investigating_officer: string | null
           last_initial: string | null
           last_seen_at: string | null
           last_seen_lat: number | null
           last_seen_lng: number | null
           last_seen_location_text: string | null
           reporter_id: string
+          source: string
+          station_org_id: string | null
           status: Database["public"]["Enums"]["case_status"]
           updated_at: string
         }
         Insert: {
           age: number
+          assigned_officer_id?: string | null
+          case_file_number?: string | null
           county?: string | null
           created_at?: string
           description?: string | null
           first_name: string
+          found_at?: string | null
+          found_notes?: string | null
           gender?: string | null
           id?: string
+          investigating_officer?: string | null
           last_initial?: string | null
           last_seen_at?: string | null
           last_seen_lat?: number | null
           last_seen_lng?: number | null
           last_seen_location_text?: string | null
           reporter_id: string
+          source?: string
+          station_org_id?: string | null
           status?: Database["public"]["Enums"]["case_status"]
           updated_at?: string
         }
         Update: {
           age?: number
+          assigned_officer_id?: string | null
+          case_file_number?: string | null
           county?: string | null
           created_at?: string
           description?: string | null
           first_name?: string
+          found_at?: string | null
+          found_notes?: string | null
           gender?: string | null
           id?: string
+          investigating_officer?: string | null
           last_initial?: string | null
           last_seen_at?: string | null
           last_seen_lat?: number | null
           last_seen_lng?: number | null
           last_seen_location_text?: string | null
           reporter_id?: string
+          source?: string
+          station_org_id?: string | null
           status?: Database["public"]["Enums"]["case_status"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "missing_children_station_org_id_fkey"
+            columns: ["station_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -450,7 +479,7 @@ export type Database = {
         | "school_shelter"
         | "police_admin"
         | "super_admin"
-      case_status: "open" | "under_review" | "matched" | "closed"
+      case_status: "open" | "under_review" | "matched" | "closed" | "found"
       match_decision: "pending" | "confirmed" | "rejected" | "escalated"
       org_type: "police" | "school" | "shelter" | "hospital" | "ngo"
     }
@@ -586,7 +615,7 @@ export const Constants = {
         "police_admin",
         "super_admin",
       ],
-      case_status: ["open", "under_review", "matched", "closed"],
+      case_status: ["open", "under_review", "matched", "closed", "found"],
       match_decision: ["pending", "confirmed", "rejected", "escalated"],
       org_type: ["police", "school", "shelter", "hospital", "ngo"],
     },
