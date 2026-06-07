@@ -1,35 +1,84 @@
+# Plan: Connect the three user surfaces
 
-## What you'll be able to do as an officer
+## Confirming the architecture
 
-1. Register at `/signup/officer` with a **station code** → instantly get the `police_admin` role.
-2. Alternatively, a `super_admin` can promote any existing user from a new **Admin → Users** page.
-3. From a new **Station Intake** page, upload photos of unidentified children present at your station (separate from guardian cases).
-4. When the AI matcher links an intake/sighting to an open case, you see it in `/review`. Confirming the match automatically:
-   - creates an in‑app notification for the guardian (reporter),
-   - sends an SMS to the guardian's phone via Twilio.
+- **One signup, no role picker.** Everyone signs up the same way and gets `parent_guardian` automatically (already wired via the `handle_new_user` trigger).
+- **Roles are granted, not chosen.** Only `super_admin` (CWSK) can promote a user to `police_admin` — enforced by RLS on `user_roles`.
+- **All three surfaces share the same database, same AI, same case/sighting pipeline.** A sighting reported by a parent is matched against cases uploaded by both parents and police stations. Matches flow into the officer review queue and the CWSK dashboard.
 
-## Build steps
+## Phase 1 — Super Admin Dashboard (CWSK)
 
-1. **Connect Twilio** (one-time): I'll trigger the Twilio connector picker so you can link an account + sender number.
-2. **Database migration**
-   - New table `station_intakes` (officer_id, station, child photos, age estimate, notes, status, created_at) + RLS so only police/super-admin can read/write.
-   - New `child_photos`-style storage path under existing `child-photos` bucket (sub-folder `intakes/`).
-   - New table `alerts_log` (guardian_id, match_id, channel sms|in_app, status, error, sent_at) for auditing.
-   - Update `handle_new_user` trigger to read `raw_user_meta_data->>'signup_role'` + `station_code`: if code matches the `OFFICER_STATION_CODE` secret, assign `police_admin` instead of `parent_guardian`.
-   - Add `phone` to profiles is already there ✔.
-3. **Secrets**: add `OFFICER_STATION_CODE` (you set the value).
-4. **Frontend**
-   - `/signup/officer` — name, email, password, phone, station name, station code.
-   - `/_authenticated/admin/users` (super_admin only) — list users, promote/demote roles.
-   - `/_authenticated/intake` (police_admin) — upload child photos at station, list active intakes.
-5. **Server functions**
-   - `createStationIntake` — uploads photos, inserts row.
-   - `confirmMatchAndAlert` — replaces current "confirm" action in `/review`. After updating `match_candidates.decision = 'confirmed'`, it loads the guardian's profile, inserts a notification row, then calls Twilio via the connector gateway to SMS the guardian. Failures logged to `alerts_log`, never block the confirm.
+New route: `/_authenticated/admin/index.tsx` (gated to `super_admin`)
 
-## Things you'll need to do
+One screen showing the full picture:
+- **Top stats:** total open cases, matched, found, total sightings, pending matches, registered officers
+- **Cases table:** filterable by status (open / matched / found / closed) and county, with child name, age, reporter type (parent vs station), date, status
+- **Recent sightings feed**
+- **Pending matches** awaiting officer review
+- **Quick links** to existing audit log and (Phase 2) user management
 
-- **Pick the station code** (any string, e.g. `KPS-2026-NAIROBI`). I'll prompt for it as a secret.
-- **Connect Twilio** when the picker opens, with a sender number that can SMS Kenyan numbers.
-- (Optional later) Add email channel — you opted out for now; easy to add by enabling Lovable Emails + a domain.
+New server fn: `getSuperAdminOverview` in `src/lib/admin.functions.ts` — returns all the above in one call, gated by `has_role(uid, 'super_admin')`.
 
-After you approve, I'll start with the Twilio connection, then the migration, then the code.
+## Phase 2 — Role Management UI
+
+New route: `/_authenticated/admin/users.tsx` (super_admin only)
+
+- List all users with their current roles, full name, phone, signup date
+- Search by name / email / phone
+- Action: **Promote to police_admin** / **Demote** / **Promote to super_admin**
+- Optional: assign officer to an organization (station) — uses existing `organizations` table
+
+New server fns in `src/lib/admin.functions.ts`:
+- `listAllUsers` (super_admin only)
+- `grantRole({ user_id, role })` (super_admin only — writes to `user_roles`, audit-logged)
+- `revokeRole({ user_id, role })` (super_admin only)
+- `assignOfficerToOrg({ user_id, org_id })` (super_admin only)
+
+## Phase 3 — Found-Child Workflow + Officer Case Upload
+
+### 3a. Status flow
+Current: `open → matched`. Add: `matched → found` and `open → found` (in case a child is recovered without an AI match), plus `→ closed` for false reports.
+
+Migration: extend the status check / add a `found_at` timestamp and `found_notes` column on `missing_children`.
+
+### 3b. Officer "mark as found" action
+On the case detail page (when viewer is `police_admin` or `super_admin`):
+- Button: **Mark child as found** → opens a small form (date, circumstances, was-reunified-with-family)
+- Server fn: `markCaseFound({ case_id, notes })` — updates status, notifies the parent who filed it, writes a `case_updates` row, audit-logged
+
+### 3c. Separate officer case-upload flow
+New route: `/_authenticated/officer/cases/new.tsx` (police_admin / super_admin only)
+
+Extends the parent form with station-specific fields:
+- Police case file number (OB number)
+- Reporting station / organization (dropdown from `organizations`)
+- Investigating officer name
+- Date case was opened at the station
+
+Migration: add `case_file_number`, `station_org_id`, `investigating_officer`, `source` (`'parent' | 'station'`) columns to `missing_children`.
+
+New server fn: `createStationCase` — same as `createCase` but accepts and stores the station fields, and tags `source = 'station'`. Reuses the same photo upload and AI matching pipeline so a station-uploaded case is matched against incoming sightings exactly like a parent-filed one.
+
+### 3d. Officer landing page
+New route: `/_authenticated/officer/index.tsx` — entry point for officers showing their station's cases, the review queue link, and the "Upload station case" button.
+
+## Navigation updates
+
+`SiteHeader.tsx` shows different nav based on role (reads from `user_roles`):
+- Everyone: Dashboard, Report Missing, Report Sighting
+- police_admin: + Review Queue, + Officer Console
+- super_admin: + CWSK Dashboard, + User Management, + Audit Log
+
+## Order of execution (per your answer)
+
+1. Super admin dashboard + `getSuperAdminOverview` server fn
+2. User management page + grant/revoke role server fns
+3. Status migration → mark-as-found action → officer case-upload flow → officer landing page
+
+## Technical notes
+
+- All new server fns use `requireSupabaseAuth` + `has_role` check at the top.
+- All role-changing actions write to `audit_logs`.
+- Match pipeline (`createSighting`) needs **no changes** — it already pulls every open case regardless of who filed it, so station-uploaded cases automatically participate in AI matching.
+- RLS already enforces super_admin-only writes to `user_roles`.
+- I'll batch each phase as one logical commit so you can preview after each.

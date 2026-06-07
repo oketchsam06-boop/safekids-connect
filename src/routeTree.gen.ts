@@ -19,10 +19,14 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthenticatedReviewRouteImport } from './routes/_authenticated/review'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedOfficerIndexRouteImport } from './routes/_authenticated/officer.index'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedSightingsNewRouteImport } from './routes/_authenticated/sightings.new'
 import { Route as AuthenticatedCasesNewRouteImport } from './routes/_authenticated/cases.new'
 import { Route as AuthenticatedCasesCaseIdRouteImport } from './routes/_authenticated/cases.$caseId'
+import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin.audit'
+import { Route as AuthenticatedOfficerCasesNewRouteImport } from './routes/_authenticated/officer.cases.new'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -73,6 +77,17 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOfficerIndexRoute =
+  AuthenticatedOfficerIndexRouteImport.update({
+    id: '/officer/',
+    path: '/officer/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSightingsNewRoute =
   AuthenticatedSightingsNewRouteImport.update({
     id: '/sightings/new',
@@ -90,11 +105,22 @@ const AuthenticatedCasesCaseIdRoute =
     path: '/cases/$caseId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
   id: '/admin/audit',
   path: '/admin/audit',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOfficerCasesNewRoute =
+  AuthenticatedOfficerCasesNewRouteImport.update({
+    id: '/officer/cases/new',
+    path: '/officer/cases/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -107,9 +133,13 @@ export interface FileRoutesByFullPath {
   '/review': typeof AuthenticatedReviewRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/cases/$caseId': typeof AuthenticatedCasesCaseIdRoute
   '/cases/new': typeof AuthenticatedCasesNewRoute
   '/sightings/new': typeof AuthenticatedSightingsNewRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/officer/': typeof AuthenticatedOfficerIndexRoute
+  '/officer/cases/new': typeof AuthenticatedOfficerCasesNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -122,9 +152,13 @@ export interface FileRoutesByTo {
   '/review': typeof AuthenticatedReviewRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/cases/$caseId': typeof AuthenticatedCasesCaseIdRoute
   '/cases/new': typeof AuthenticatedCasesNewRoute
   '/sightings/new': typeof AuthenticatedSightingsNewRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
+  '/officer': typeof AuthenticatedOfficerIndexRoute
+  '/officer/cases/new': typeof AuthenticatedOfficerCasesNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -139,9 +173,13 @@ export interface FileRoutesById {
   '/_authenticated/review': typeof AuthenticatedReviewRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/cases/$caseId': typeof AuthenticatedCasesCaseIdRoute
   '/_authenticated/cases/new': typeof AuthenticatedCasesNewRoute
   '/_authenticated/sightings/new': typeof AuthenticatedSightingsNewRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/officer/': typeof AuthenticatedOfficerIndexRoute
+  '/_authenticated/officer/cases/new': typeof AuthenticatedOfficerCasesNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -156,9 +194,13 @@ export interface FileRouteTypes {
     | '/review'
     | '/auth/callback'
     | '/admin/audit'
+    | '/admin/users'
     | '/cases/$caseId'
     | '/cases/new'
     | '/sightings/new'
+    | '/admin/'
+    | '/officer/'
+    | '/officer/cases/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -171,9 +213,13 @@ export interface FileRouteTypes {
     | '/review'
     | '/auth/callback'
     | '/admin/audit'
+    | '/admin/users'
     | '/cases/$caseId'
     | '/cases/new'
     | '/sightings/new'
+    | '/admin'
+    | '/officer'
+    | '/officer/cases/new'
   id:
     | '__root__'
     | '/'
@@ -187,9 +233,13 @@ export interface FileRouteTypes {
     | '/_authenticated/review'
     | '/auth/callback'
     | '/_authenticated/admin/audit'
+    | '/_authenticated/admin/users'
     | '/_authenticated/cases/$caseId'
     | '/_authenticated/cases/new'
     | '/_authenticated/sightings/new'
+    | '/_authenticated/admin/'
+    | '/_authenticated/officer/'
+    | '/_authenticated/officer/cases/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -275,6 +325,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/officer/': {
+      id: '/_authenticated/officer/'
+      path: '/officer'
+      fullPath: '/officer/'
+      preLoaderRoute: typeof AuthenticatedOfficerIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/sightings/new': {
       id: '/_authenticated/sightings/new'
       path: '/sightings/new'
@@ -296,11 +360,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCasesCaseIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/users': {
+      id: '/_authenticated/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/audit': {
       id: '/_authenticated/admin/audit'
       path: '/admin/audit'
       fullPath: '/admin/audit'
       preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/officer/cases/new': {
+      id: '/_authenticated/officer/cases/new'
+      path: '/officer/cases/new'
+      fullPath: '/officer/cases/new'
+      preLoaderRoute: typeof AuthenticatedOfficerCasesNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
@@ -310,18 +388,26 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedReviewRoute: typeof AuthenticatedReviewRoute
   AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
+  AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedCasesCaseIdRoute: typeof AuthenticatedCasesCaseIdRoute
   AuthenticatedCasesNewRoute: typeof AuthenticatedCasesNewRoute
   AuthenticatedSightingsNewRoute: typeof AuthenticatedSightingsNewRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedOfficerIndexRoute: typeof AuthenticatedOfficerIndexRoute
+  AuthenticatedOfficerCasesNewRoute: typeof AuthenticatedOfficerCasesNewRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedReviewRoute: AuthenticatedReviewRoute,
   AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
+  AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedCasesCaseIdRoute: AuthenticatedCasesCaseIdRoute,
   AuthenticatedCasesNewRoute: AuthenticatedCasesNewRoute,
   AuthenticatedSightingsNewRoute: AuthenticatedSightingsNewRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  AuthenticatedOfficerIndexRoute: AuthenticatedOfficerIndexRoute,
+  AuthenticatedOfficerCasesNewRoute: AuthenticatedOfficerCasesNewRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
