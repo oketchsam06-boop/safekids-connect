@@ -147,3 +147,97 @@ export const getCase = createServerFn({ method: "POST" })
 
     return { case: c, photos: photoUrls, contacts: contacts ?? [], updates: updates ?? [] };
   });
+
+// ============================================================
+// Officer / station case upload (Phase 3)
+// ============================================================
+
+const StationCaseInput = CaseInput.extend({
+  case_file_number: z.string().trim().min(1).max(50),
+  station_org_id: z.string().uuid().optional().nullable(),
+  investigating_officer: z.string().trim().max(120).optional().nullable(),
+});
+
+export const createStationCase = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => StationCaseInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Verify caller is officer / super admin
+    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    const ok = (roles ?? []).some((r) => r.role === "police_admin" || r.role === "super_admin");
+    if (!ok) throw new Error("Forbidden — officers only");
+
+    // Consent (officer attests on behalf of the station)
+    await supabase.from("consents").insert({
+      user_id: userId,
+      purpose: "station_case_upload",
+      version: data.consent_version,
+    });
+
+    // Insert case via admin client so we can set 'source' and station fields
+    const { data: caseRow, error: caseErr } = await supabaseAdmin
+      .from("missing_children")
+      .insert({
+        reporter_id: userId,
+        first_name: data.first_name,
+        last_initial: data.last_initial ?? null,
+        age: data.age,
+        gender: data.gender ?? null,
+        county: data.county ?? null,
+        last_seen_at: data.last_seen_at ?? null,
+        last_seen_location_text: data.last_seen_location_text ?? null,
+        last_seen_lat: data.last_seen_lat ?? null,
+        last_seen_lng: data.last_seen_lng ?? null,
+        description: data.description ?? null,
+        source: "station",
+        case_file_number: data.case_file_number,
+        station_org_id: data.station_org_id ?? null,
+        investigating_officer: data.investigating_officer ?? null,
+        assigned_officer_id: userId,
+      })
+      .select("id")
+      .single();
+    if (caseErr || !caseRow) throw new Error(caseErr?.message ?? "Failed to create station case");
+
+    const path = `cases/${caseRow.id}/${crypto.randomUUID()}.img`;
+    await uploadPrivate(path, data.photo_data_url);
+
+    const { error: photoErr } = await supabaseAdmin.from("child_photos").insert({
+      child_id: caseRow.id,
+      storage_path: path,
+      uploaded_by: userId,
+      is_primary: true,
+    });
+    if (photoErr) throw new Error(photoErr.message);
+
+    if (data.contacts.length) {
+      await supabaseAdmin
+        .from("emergency_contacts")
+        .insert(data.contacts.map((c) => ({ ...c, child_id: caseRow.id })));
+    }
+
+    await logAudit(userId, "case.create.station", "missing_children", caseRow.id, {
+      case_file_number: data.case_file_number,
+    });
+
+    // Notify super admins of new station case
+    const { data: admins } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "super_admin");
+    if (admins?.length) {
+      await supabaseAdmin.from("notifications").insert(
+        admins.map((a) => ({
+          user_id: a.user_id,
+          title: "New station case uploaded",
+          body: `${data.first_name}, age ${data.age} — OB ${data.case_file_number}`,
+          link: `/cases/${caseRow.id}`,
+        })),
+      );
+    }
+
+    return { id: caseRow.id };
+  });
+
