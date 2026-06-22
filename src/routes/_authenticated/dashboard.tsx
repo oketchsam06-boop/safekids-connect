@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getMyContext, syncMyAccount } from "@/lib/auth.functions";
 import { getDashboardStats } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthReady } from "@/hooks/use-auth-ready";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
