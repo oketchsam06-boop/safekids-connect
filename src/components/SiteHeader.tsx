@@ -4,26 +4,21 @@ import { useTranslation } from "react-i18next";
 import { Shield } from "lucide-react";
 import { LangSwitch } from "./LangSwitch";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getMyContext } from "@/lib/auth.functions";
+import { useAuthReady } from "@/hooks/use-auth-ready";
 
 export function SiteHeader() {
   const { t } = useTranslation();
-  const [authed, setAuthed] = useState(false);
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setAuthed(!!s));
-    return () => sub.subscription.unsubscribe();
-  }, []);
+  const { isReady, user } = useAuthReady();
+  const authed = !!user;
 
   const fetchCtx = useServerFn(getMyContext);
   const { data: me } = useQuery({
-    queryKey: ["me"],
+    queryKey: ["me", user?.id],
     queryFn: () => fetchCtx(),
-    enabled: authed,
+    enabled: isReady && authed,
   });
   const roles = me?.roles ?? [];
   const isOfficer = roles.includes("police_admin");
