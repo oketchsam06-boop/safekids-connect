@@ -40,8 +40,9 @@ function Dashboard() {
   const fetchCtx = useServerFn(getMyContext);
   const syncAccount = useServerFn(syncMyAccount);
   const fetchStats = useServerFn(getDashboardStats);
+  const { isReady, user } = useAuthReady();
   const { data: me } = useQuery({
-    queryKey: ["me"],
+    queryKey: ["me", user?.id],
     queryFn: async () => {
       try {
         await syncAccount({ data: {} });
@@ -50,11 +51,12 @@ function Dashboard() {
       }
       return fetchCtx();
     },
+    enabled: isReady && !!user,
   });
   const { data: stats } = useQuery({
     queryKey: ["stats", me?.userId],
     queryFn: () => fetchStats(),
-    enabled: !!me?.userId,
+    enabled: isReady && !!me?.userId,
   });
 
   async function signOut() {
